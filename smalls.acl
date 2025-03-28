@@ -1,0 +1,336 @@
+Types:
+  booleanp        - binary (T or F)
+  integerp        - whole number
+  acl2-numberp    - rational or complex rational
+  rationalp       - rational (ratio or integer)
+  natp            - natural number
+  atom            - not a cons pair
+  list            - list of objects
+  cons pair       - X---> right-side object
+                    |
+                    V
+                   left-side-object
+
+ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++
+Recognizers:
+  zp              - test for 'natural' against 0
+                      T: 0, -1, 5/2, 'abc
+                      F: 3, 1000
+  zerop           - test for 'acl2-number' against 0
+                      T: 0
+                      F: 3, 5/2, -1
+  atom            - an atom
+                      T: 'abc, 1, nil
+                      F: '(a), (cons 'a 'b)
+  endp            - end of list
+                      T: nil
+                      F: '(nil), '(2)
+  consp           - cons pair (a . b)
+                      T: '(2), '(a . b), '(1 2 (3 4) . 5)
+                      F: nil, 'a, 1
+  listp           - lists including those that are not proper
+                      T: nil, '(2), '(1 2 (3 4) . 5)
+                      F: 'a, 1
+  true-listp      - null terminated list
+                      T: nil, '(2), '(1 2 3 4)
+                      F: '(a . b), 'a, 1, '(1 2 (3 4) . 5)
+  real-listp      - null terminated list of rationals etc.
+
+ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++
+Arithmetic operations: (arithmetic values)
+
+  (/ 6 8) (+ 3 4) (- 3 4) (* 3 4)
+  (max 2 3) - max of the two numbers
+  (mod 450 13)   -  8  (450 % 13)
+  (floor 450 13) - 34  (450 / 13)
+
+ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++
+Arithmetic tests:
+  
+  (equal 3 4) (< 3 4) (> 3 4) (= 4 5) (<= 3 4) (>= 3 4)
+
+ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++
+Logic:
+
+  (and t nil ...) - true if all arguments are true, false otherwise
+  (or t nil ...)  - true if one argument is true, false otherwise
+  (xor t nil)     - true iff one argument is true, false otherwise
+
+ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++
+Conditional:
+
+  (if <exp1> <exp2> <exp3>) - if <exp1> is true then its <exp2> or else
+                              its <exp3>
+
+ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++
+Lists:
+  (car '(2 3 4 5))   - first object in a list or cons pair
+                          2
+  (last '(2 3 4 5))  - last cons pair in a list 
+                          (5)  which is (5 . nil)
+                          (last '(a . b)) = '(a . b)
+  (cdr '(2 3 4 5))   - list or cons pair minus the first object 
+                          '(2 3 4 5)
+                          (cdr '(a . b)) is 'b 
+                          (cdr '(1)) is nil
+  (cons 'a '(2 3 4)) - place an object at the beginning of a list
+                          '(a 2 3 4)
+                          (cons '(a . b) '(c . d)) is ((a . b) c . d)
+                              X----X---\
+                              |    |   |
+                              X-\  c   d
+                              | |
+                              a b
+                          (cons 'a nil) is '(a)
+  (list 'a 'b 'c)    - make a list
+                            '(a b c)
+  (append '(1 2 3) '(4 5 6)) - append one list onto another
+                            '(1 2 3 4 5 6)
+
+ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++
+List tests:
+
+  (member 'a '(3 4 5 a h)) - nil if first arg is not a member of the second 
+                             arg list - otherwise returns list from
+                             first occurrence
+  (true-listp l), (consp x), (endp l), (listp l), (real-listp l) - as above
+
+ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++
+Let:
+
+  (let ((x <exp1>) (y <exp2>)) <exp3>) - local binding of x and y to be
+                                         used in <exp3>
+
+ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++
+Procedures:
+;; Make a recognizer for a list of natural numbers
+(defun nat-listp (l)
+   (if (endp l)
+       t
+       (if (natp (car l))
+           (nat-listp (cdr l))
+           nil)))
+
+;; find the maximum of a list
+(defun findmax (l)
+   (if (endp l)
+       nil
+       (if (endp (cdr l))
+           (car l)
+           (let ((x (findmax (cdr l))))
+              (if (< x (car l))
+                  (car l)
+                  x)))))
+
+;; Proves - the max of the first list element and the maximum of the rest
+;;          equals the maximum of the whole list
+(thm (implies (and (integerp (car lst)) 
+                   (integerp (findmax (cdr lst))))
+              (equal (max (car lst) (findmax (cdr lst))) 
+                     (findmax lst))))
+
+;; Does not prove - the above theorem without the integerp tests
+(thm (equal (max (car lst) (findmax (cdr lst))) (findmax lst)))
+
+;; The following is what ACL2 can't prove to complete a proof for the above:
+;; 
+;;   (implies (and (consp lst)              <- we really have a list...
+;;                 (not (consp (cdr lst)))  <- with one element...
+;;                 (<= (car lst) 0))        <- and it appears to be a number
+;;            (not (car lst)))   <- all of the above imply the list is empty
+;;
+;;   Of course, this can't be proved - it is wrong (i.e. not true).  This
+;;   case is coming up because we had to do something about returning a 
+;;   value for findmax when given an empty list - namely we did something
+;;   that is inconsistent with the normal output of findmax - we returned nil.
+;;   But, by forcing no nils from findmax and (car lst) this case cannot
+;;   come up and the theorem proves.
+                    
+;; The following proves as well
+(thm (implies (and (acl2-numberp (car lst)) 
+                   (acl2-numberp (findmax (cdr lst))))
+              (equal (max (car lst) (findmax (cdr lst))) 
+                     (findmax lst))))
+
+;; Reverse the elements of a list
+;;   1. If the list is empty return nil
+;;   2. Otherwise, remove the first element from the list, reverse the
+;;      remaining elements in the list, put the first element on the
+;;      end of the reversed list.
+(defun reverse-lst (lst)
+   (if (endp lst)
+       nil
+       (append (reverse-lst (cdr lst)) (list (car lst)))))
+
+;; The theorem - first element of a list equals last of its reverse
+(thm (equal (car lst) (car (last (reverse-lst lst)))))
+
+;; returns n via summation
+(defun sum (n)
+   (if (zp n)
+       0
+       (+ 1 (sum (1- n)))))
+
+(thm (or (zp n) (equal (sum n) n)))
+
+;; returns the sum of all numbers from 1 to n
+(defun sum1 (n)
+   (if (zp n)
+       0
+       (+ n (sum1 (1- n)))))
+
+;; this proves
+(thm (or (zp n) (equal (sum1 n) (* 1/2 n (+ n 1)))))
+
+;; this does not
+(thm (or (zp n) (equal (sum1 n) (/ (* (+ n 1) n) 2))))
+
+(defun tester (p)
+   (if (zp p)
+       t
+       (if (not (or (zp p) (equal (sum1 p) (/ (* (+ p 1) p) 2))))
+           nil
+           (tester (- p 1)))))
+
+(defun power (a b)
+   (declare (xargs :guard (and (natp a) (natp b))))
+   (if (zp b)
+       1
+       (if (= b 1)
+           a
+           (* a (power a (- b 1))))))
+
+(thm
+   (implies (and (natp x) (natp m) (natp k) (< x (1- (power 2 m))) (<= k m))
+            (equal
+                (mod (+ (* x (power 2 k)) (floor x (power 2 (- m k))))
+                     (power 2 m))
+                (mod (* x (power 2 k))
+                     (1- (power 2 m))))))
+
+ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++
+;; procedure to append two lists
+(defun app (x y)
+   (if (endp x)
+       y
+       (cons (car x) (app (cdr x) y))))
+
+;;  We expect this to be T regardless of lists a,b,c
+(let ((a '(1 2)) (b '(3 4)) (c '(5 6)))
+     (equal (app (app a b) c) (app a (app b c))))
+
+;; prove that it works no matter what
+(thm (equal (app (app a b) c) (app a (app b c))))
+
+;; put it in the database
+(defthm associativity-of-app (equal (app (app a b) c) (app a (app b c))))
+
+;; but suppose we put this in
+(defthm associativity-of-app-2 (equal (app a (app b c)) (app (app a b) c)))
+
+;; then try to prove this
+(thm (equal (app (app (app a b) c) d) (app a (app b (app c d)))))
+
+;; To avoid placing a rule in a database
+(thm (equal (app (app (app a b) c) d) (app a (app b (app c d))))
+:rule-classes nil)
+
+;; To disable a rule 
+
+(in-theory (disable theorem))
+
+ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++
+Mergesort:
+---------
+;; Split the elements of a list into two lists of approximately equal size
+;; The output is a list of two lists.
+;;    1. If the input list is empty return a list of two empty lists
+;;    2. If the input list has one element, return a list containing nil
+;;       and the input list
+;;    3. Otherwise, split the input list minus the first two elements
+;;       and call it llst which is a list of lists l1 and l2.  Stick
+;;       the first element of the input list onto l1 and the second
+;;       element of the input list onto l2.  Return the modified llst.
+(defun split-lst (lst)
+   (if (endp lst)
+       (list nil nil)
+       (if (endp (cdr lst))
+	   (list lst nil)
+           (let ((llst (split-lst (cdr (cdr lst)))))
+                (list (cons (car lst) (car llst)) 
+		      (cons (car (cdr lst)) (car (cdr llst))))))))
+
+;; Merge two sorted lists
+;; Assumes two input lists are numbers in increasing order
+;;   1. If one list is nil, return the other list
+;;   2. Otherwise, if the first element of one list lst1 is less than the
+;;      first element of the other list lst2, concatenate the first element
+;;      of lst1 onto the list resulting from the merge of the rest of lst1
+;;      and all of lst2.
+(defun merge-lst (lst1 lst2)
+   (declare (xargs :measure (+ (acl2-count lst1) (acl2-count lst2))))
+   (if (endp lst1)
+       lst2
+       (if (endp lst2)
+           lst1
+           (if (< (car lst1) (car lst2))
+               (cons (car lst1) (merge-lst (cdr lst1) lst2))
+               (cons (car lst2) (merge-lst lst1 (cdr lst2)))))))
+
+;; Assumes inputs are numbers
+;;   1. If the input list is empty or has one element, return the list
+;;   2. Otherwise, split the list into two lists lst1 and lst2, sort
+;;      lst1 and sort lst2, and merge the two sorted lists.
+(defun mergesort (lst) 
+   (if (or (endp lst) (endp (cdr lst)))
+       lst
+       (let ((llst (split-lst lst)))
+            (merge-lst (mergesort (car llst)) 
+                       (mergesort (car (cdr llst)))))))
+
+;; this must be proved before the above is accepted
+(defthm split-list-results-shorter
+   (implies (and (consp x) (consp (cdr x)))
+            (and (< (acl2-count (car (split-lst x))) (acl2-count x))
+                 (< (acl2-count (car (cdr (split-lst x)))) (acl2-count x)))))
+
+ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++
+Useful commands:
+---------------
+  :u             - undo the last event (function definition, theorem, etc.)
+  :ubt :max      - undo back through the most recent command
+                   (which just means undo the most recent command)
+  :ubt fn        - undo back through the introduction of fn
+                   (including all the other events in fn's block)
+  :ubt 5         - undo back through the fifth command executed
+  :ubt (:x -4)   - undo back through the most recent five commands
+
+
+  :pbt :max    - print back through the most recent command
+  :pbt :x      - print back through the most recent command
+  :pbt fn      - print back through the introduction of fn
+  :pbt 5       - print back through the fifth command executed
+  :pbt (:x -4) - print back through the most recent five commands
+
+  :pc 3        - print the third command executed
+  :pc :max     - print the most recent command
+  :pc :x       - print the most recent command
+  :pcs 1 5     - print commands 1 through 5
+  :pcs :x (:x -3)     - print the 3 most recently executed commands
+  :pcs fn assoc-of-fn - print the commands between the one that introduced
+                        fn and the one that introduced assoc-of-fn
+
+  :pc fn         - print the command that introduced fn
+  :pf <function> - print the definition of a function
+
+  :pl foo      - print rules that rewrite some call of foo
+  :pl (+ x y)  - print rules that rewrite (+ x y)
+
+  :q   - escape to common lisp
+  (lp) - return to acl2 from common lisp
+
+  (trace$ <function>)        - trace the execution of a function
+  (<function> arg1 arg2 ...)
+
+  (set-debugger-enable t)    - turn on the debugger
+  (set-debugger-enable nil)  - turn off the debugger?
