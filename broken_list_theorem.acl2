@@ -1,0 +1,41 @@
+(defun custom-nat-listp (l)
+   (if (endp l)
+       t
+       (if (natp (car l))
+           (custom-nat-listp (cdr l))
+           nil)))
+
+;; find the maximum of a list
+(defun findmax (l)
+   (if (endp l)
+       nil
+       (if (endp (cdr l))
+           (car l)
+           (let ((x (findmax (cdr l))))
+              (if (< x (car l))
+                  (car l)
+                  x)))))
+
+
+;; Proves - the max of the first list element and the maximum of the rest
+;;          equals the maximum of the whole list
+(thm (implies (and (integerp (car lst))
+                   (integerp (findmax (cdr lst))))
+              (equal (max (car lst) (findmax (cdr lst)))
+                     (findmax lst))))
+
+(defun reverse-lst (lst)
+	(if (endp lst)
+		nil
+		(append (reverse-lst (cdr lst)) (list (car lst)))))
+
+; proves that first el of a list is the same as the last of the reversed list
+(thm (equal (car lst) (car (last (reverse-lst lst)))))
+
+; prove that the last el of a list is the same as the head of the reversed list
+(thm 
+	(implies (consp lst) 
+	(equal 
+		(car (last lst)) 
+		(car (reverse-lst lst)))))
+
