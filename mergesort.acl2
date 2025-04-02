@@ -1,0 +1,44 @@
+(defun split-lst (lst)
+   (if (endp lst)
+       (list nil nil)
+       (if (endp (cdr lst))
+           (list lst nil)
+           (let ((llst (split-lst (cdr (cdr lst)))))
+                (list (cons (car lst) (car llst))
+                      (cons (car (cdr lst)) (car (cdr llst))))))))
+
+;; this must be proved before the above is accepted
+(defthm split-list-results-shorter
+   (implies (and (consp x) (consp (cdr x)))
+            (and (< (acl2-count (car (split-lst x))) (acl2-count x))
+                 (< (acl2-count (car (cdr (split-lst x)))) (acl2-count x)))))
+
+;; Merge two sorted lists
+;; Assumes two input lists are numbers in increasing order
+;;   1. If one list is nil, return the other list
+;;   2. Otherwise, if the first element of one list lst1 is less than the  
+;;      first element of the other list lst2, concatenate the first element
+;;      of lst1 onto the list resulting from the merge of the rest of lst1
+;;      and all of lst2.
+(defun merge-lst (lst1 lst2)
+   (declare (xargs :measure (+ (acl2-count lst1) (acl2-count lst2))))
+   (if (endp lst1)
+       lst2
+       (if (endp lst2)
+           lst1
+           (if (< (car lst1) (car lst2))
+               (cons (car lst1) (merge-lst (cdr lst1) lst2))
+               (cons (car lst2) (merge-lst lst1 (cdr lst2)))))))
+
+;; Assumes inputs are numbers
+;;   1. If the input list is empty or has one element, return the list  
+;;   2. Otherwise, split the list into two lists lst1 and lst2, sort
+;;      lst1 and sort lst2, and merge the two sorted lists.
+(defun mergesort (lst)
+   (if (or (endp lst) (endp (cdr lst)))
+       lst
+       (let ((llst (split-lst lst)))
+            (merge-lst (mergesort (car llst))
+                       (mergesort (car (cdr llst)))))))
+       
+
