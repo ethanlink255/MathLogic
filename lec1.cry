@@ -1,0 +1,279 @@
+/* basic structures */
+a : Bit;
+a = True;   // Bit is the basic type.
+
+b : [4];    // A sequence of four bits - 4 bit word
+b = [True False True True];
+
+c : [32];   // A sequence of 32 bits - 32 bit word
+c = 97212;  // A single decimal value is specified
+
+d : [4][32];              // A sequence of four 32-bit words
+d = [0x1 0x2 0x3 0xff];   // Each is given a hexidecimal value
+
+e : [2][2][32];           // A sequence of two sequences of 32-bit words
+e = [[1 2] [3 4]]; 
+
+/* lists */
+x = [1 .. 10];
+y = [1 3 .. 10];
+z : [inf][32];
+z = [1 2 ..];
+w = [10 -- 1];
+u = [10 8 -- 1];
+
+aa: [inf][32];
+aa = [1 4 .. ];
+
+/* list indexing */
+v1 = x@4;
+v2 = x@0;
+v3 = x@100;           /* bounds checking done at run time */
+v4 = x @@ [0 1 2];    /* elements from the front */
+p1 = w !! [1 2 3];    /* elements from the rear */
+
+/* concatenation */
+/*xx:[8][32];*/
+xx = [1 2 3 4 5 6 7]#[42];
+
+/*  bit indexing  */
+b1 = 0xf5;
+b2 = 0xfe @ 0;
+b3 = b1 @@ [0 .. 3];
+
+/* Arithmetic operations */
+x10:[4][32];
+x10 = [1 2 3 4]+[5 6 7 18];
+
+t01 = 1+1;  /* gives 0 because the smallest width is inferred - this is 0 */
+t02 = (1:[32])+1;  /* gives 2 since the width is now 32 */
+t03 = (1:[4])+15;  /* gives 0 due to overflow */
+
+t1 = take(1,[1 2 3 4 5]);
+t2 = drop(2,[1 2 3 4 5]);
+
+/* polynomial arithmetic - binary coefficients */
+z1 = <|x^3+x+1|> + <|x^3 +x^2+1|>;  /* 1011 + 1101 = 1 1000 -> 8 */
+
+/* bit operations */
+q = z1 ^ 0xf;
+r = z1 | 0x7;
+s = z1 & 0x7;
+
+xs1 = [0 .. 7];
+yss = [[0 1][2 3][4 5][6 7]];
+x11 = 0x8765;
+
+a41 = xs1 << 4;
+a42 = xs1 <<< 4;
+a43 = yss >> 2;
+a44 = x11 >> 8;
+a45 = x11 >>> 4;
+a46 = xs1 >>> 10;
+
+/* comparison */
+a21 = (1==2);
+a22 = ([[12 34][14 9]] == [[12 34][14 (3+6)]]);
+a23 = ([1 3 .. 10] == [1 3 5 7 9]);
+
+/* functions */
+swap : {a} [4]a -> [4]a;     // A function that reverses the order of elements
+swap [a b c d] = [d c b a];  // in a four element sequence
+
+f1: {a} (a >= 32) => [a] -> [a];  // Compare f1 and f2
+f1 x = x*x;
+
+f2: {a} [a] -> [a];
+f2 x = x*x;
+
+c1: {a} (a >= 4) => [a];
+c1 = 8;
+
+d1: {a} (a >= 4) => [a] -> [a];
+d1 x = 4*x;
+
+f x = a+b where { a:[32]; b:[32]; a = x*2; b = x-1; };
+
+headx : {a b} [a]b -> b;    // value is first element of a list
+headx a = a @ 0;
+
+tailx : {a b} (fin a) => [a]b -> [a-1]b;
+tailx a = a @@ [1..width(a)-1];
+
+/*
+taily : {a b} [a+1]b -> [a]b;
+taily a = a @@ [1..];
+*/
+
+taily : {a} [inf]a -> [inf]a;
+taily l = [| l@i || i <- [1..]:[inf][32] |];
+
+sample : {a b} [a]b -> [6]b;      // first six elements at index locations
+sample a = a @@ [1 2 4 8 16 32];  // that are powers of 2
+/* sample ([1 ..]:[inf][32]) */
+
+pad : [64] -> [512];       // A simple padding function
+pad key = key # 0 # sz
+where { 
+   sz : [448];
+   sz = width key;
+};
+
+
+
+/* split and join */
+a55:[2][32];
+a55 = split(0x570248D00425);  /* [0x48d00425 0x00005702]       */
+
+b55:[4][16];
+b55 = split(0x570248D00425);  /* [0x0425 0x48d0 0x5702 0x0000] */
+
+c55:[8][8];
+c55 = split(0x570248D00425);  /* [0x25 0x04 0xd0 0x48 0x02 0x57 0x00 0x00] */
+
+d55:[2][2][16];
+d55 = split(split(0x570248D00425));  /* [[0x0425 0x48d0] [0x5702 0x0000]]  */
+
+func [a b c d] = a+b-c+d;
+a0 = (func [5 6 7 8]);
+a1 = (join [[5 6] [7 8]]);
+a2 = func(a1);
+a3 = func (split 0x5678);
+
+
+
+/* List comprehensions */
+a10 = [| [x y] || x <- [1 2], y <- [3 4 5] |];
+a11 = [| [x y z] || x <- [1 2], y <- [3 4] || z <- [5 6 7 8 9]|];
+a12 = [| [x y z] || x <- [1 2], y <- [3 4], z <- [5 6]|];
+a13 = [| [x y] || x <- [1 .. 10] || y <- [4 .. 20] |];
+
+/* ****************************************************** */
+
+/* Rotate each element of xs by a number in is */
+rotem:{a} ([a][32], [a][5]) -> [a][32];
+rotem (xs,is) = [| x <<< i 
+                || x <- xs
+                || i <- is |];
+/* rotem ([1 2 3],[1 2 3]) = [2 8 24] */ 
+
+sums : [10][32];
+sums = [0] # [| sum + i 
+             || sum <- sums
+             || i <- [1..9]  |];
+/*
+i:        1     2       3         4            5               6
+sum:      0     1       3         6            10              15
+sums: [0] [0 1] [0 1 3] [0 1 3 6] [0 1 3 6 10] [0 1 3 6 10 15] [0 ... 10 15 21]
+
+i:    7                     8                        9
+sum:  21                    28                       36
+sums: [0 1 3 6 10 15 21 28] [0 1 3 5 10 15 21 28 36] [0 1 3 6 10 15 21 28 36 45]
+*/
+
+result : [32];
+result = sums @ 9;
+
+/* a permutation */
+tes1 (x) = [| x@i || i <- [0 3 2 1 4]|];
+
+/* reverse a FINTIE list */
+rev (x) = [| (x@(ln-i)) || i <- [0 .. ln] |]  where {  ln = width(x)-1; };
+
+/* Create a list of 16 numbers, beginning with the first one as input
+   doubled, then followed by numbers that are double the previous one 
+   in the list  */
+funky_0: [32] -> [16][32];
+funky_0 (x) = iv
+   where iv = [| 2*lr || lr <- [x] # iv || k  <- [1 .. 16] |];
+
+/* Slight variation on the one above the first number is not doubled */
+funky_1: [32] -> [16][32];
+funky_1 (x) = [x]#iv
+   where iv = [| 2*lr || lr <- [x] # iv || k  <- [1 .. 15] |];
+
+/* Infinite version of above */
+funky_2: [32] -> [inf][32];
+funky_2 (x) = [x]#iv
+  where iv  = [| 2*lr || lr <- [x] # iv || k  <- [1 ..] |];
+
+/* The ith term in the output list is the sum of input terms from index 0 to
+   index i.  Hence [1 4 8 17] -> [1 5 13 30] */
+sum_0: {a} [a][32]->[a][32];
+sum_0 xs = ys
+  where ys = [| x + y || x <- xs || y <- [0] # ys |];
+
+/* output is [] */
+sum_1 xs = ys
+  where ys = [| x + y || x <- ys || y <- [0] # ys |];
+
+
+
+/* infinite streams */
+counter : [inf][32];
+counter = [0..];
+
+count:[8] -> [inf][8];
+count init = [init] # count (init + 1);
+
+eightbitcounter:[inf][8];
+eightbitcounter = count 0;
+
+/* functions */
+/* Fibonnaci numbers */
+/*   1 1 2 3  5  8 13 21 ...   y <- [1 1] # ys
+     1 2 3 5  8 13 21 ...      x <- [1] # ys
+    --------------------------------------------
+ys = 2 3 5 8 13 21 34 ...      ys    */
+fib_1: {a} (a >= 256) => [inf][a];
+fib_1 = [1 1]#ys where ys = [| x + y || x <- [1] # ys || y <- [1 1] # ys |];
+
+/* Fibonnaci numbers */
+fib_2: [256]->[256];
+fib_2 (n) = (([1 1]#ys)@(n-1))
+   where ys = [| x + y || x <- [1] # ys || y <- [1 1] # ys || i <- [0..] |];
+
+/*
+   Hammings problem - given primes list in increasing order, find all
+   numbers whose prime factors are all in the primes list.
+
+   merge two streams of integers - input is two integer streams in increasing
+   order.  Output is single stream in increasing order, all output tokens exist
+   in input streams.  
+*/
+mrg:([inf][32],[inf][32]) -> [inf][32];
+mrg(x,y) = 
+  if ((x@0) < (y@0)) then [(x@0)]#mrg(tail(x),y) else [(y@0)]#mrg(x,tail(y));
+
+/* multiply all integers of a stream by a scalar - input is a stream of 
+   integers and a number m.  Output is a stream such that each number is
+   m times its corresponding number in the input stream. */
+tms:([inf][32],[32]) -> [inf][32];
+tms(s,m) = [(m*(s@0))]#tms(tail(s),m);
+
+/* compute the hamming sequence for a given set of prime numbers.  The input
+   list of primes is in increasing order. */
+ham:{a} (fin a, 32>=width(a),a>=1) => ([a][32],[32]) -> [inf][32];
+ham(primes,i) = 
+   if ((width(primes)-1) == i) then 
+      [(primes@i)]#tms(ham(primes,i),(primes@i)) 
+   else
+      [(primes@i)]#mrg(tms(ham(primes,i),(primes@i)),ham(primes,(i+1)));
+
+/* Usage: ham ([3 5 11],0) */
+
+sbox1 : [4][16][4];
+sbox1 = [[14 4 13 1 2 15 11 8 3 10 6 12 5 9 0 7]
+         [0 15 7 4 14 2 13 1 10 6 12 11 9 5 3 8]
+         [4 1 14 8 13 6 2 11 15 12 9 7 3 10 5 0]
+         [15 12 8 2 4 9 1 7 5 11 3 14 10 0 6 13]
+        ];
+s1 = sbox1 @ [True True] @ [True True True True];
+s2 = sbox1 @ [True True] @ [False True True True];
+s3 = sbox1 @ [True True] @ [True False True True];
+s4 = sbox1 @ [True True] @ [False False True True];
+s5 = sbox1 @ [False True] @ [True True True True];
+s6 = sbox1 @ [True False] @ [True True True True];
+s7 = sbox1 @ [False False] @ [True True True True];
+s8 = reverse(s7);
+
