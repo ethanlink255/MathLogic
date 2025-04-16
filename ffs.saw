@@ -1,0 +1,19 @@
+import "ffs.cry";
+
+l <- llvm_load_module "ffs.bc";
+c_ffs_ref <- llvm_extract l "ffs_ref";
+c_ffs_imp <- llvm_extract l "ffs_imp";
+
+print "c ref <-> c imp";
+let thm2 = {{ \x -> c_ffs_ref x == c_ffs_imp x }};
+prove_print abc thm2;
+
+print "cryptol imp <-> c imp";
+let thm4 = {{ \x -> ffs_imp x == c_ffs_imp x }};
+prove_print abc thm4;
+
+print "cryptol imp <-> cryptol ref";
+let thm5 = {{ \x -> ffs_imp x == ffs_ref x }};
+prove_print abc thm5;
+
+print "Done.";
